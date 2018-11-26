@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<style type="text/css">
+	
+body{
+	text-align: center;
+	background-color: lightblue;
+}
+
+</style>
+<meta charset="UTF-8">
+<title>Publisher</title> 
+<script
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</head>
+<body>
+	<H2>Publisher Details</H2>
+	<H3>Publisher Add</H3>
+	<div id="publisher_add">
+		<table align="center">
+			<tr>
+				<th>Publisher name</th>
+				<th>Topic</th>
+			</tr>
+			<tr>
+				<td>
+					<input id="publisherName" type="text" name="publisherName" /> 
+				</td>
+				<td>
+					<input id="topicName" type="text" name="topicName" />
+				</td>
+			</tr>
+		</table> 
+		<br>
+		<input type="submit" name="add" id="add" value="add"/>
+	</div>
+	<hr>
+	<H3>Publish data</H3>
+	<div id="publisherPublish">
+		Topics: <select id="topicsSelect" name="topicsSelect"></select> 
+		<br>
+		<br>
+		Topic Data: <input id="topicData" type="text" name="topicData" /> <input
+			type="submit" name="publish" id="publish" value="publish" />
+	</div>
+
+
+	<script type="text/javascript">
+	
+	var topics = [];	
+	var url = "ws://127.0.0.1:8090/phase2_2/id2?TYPE=PUBLISHER";
+	  var newPublisherSocket = new WebSocket(url);
+	  /* newPublisherSocket.onmessage = onMessage; */
+	
+	
+$("summary").click(function(e) {
+	populateTopics("topicList");
+});	
+	
+	
+$("#add").click(function(e) {
+	  e.preventDefault();
+	  /* var newPublisher = new WebSocketClient("PUBLISHER",document.getElementById('topicName').value;
+	  newPublisher.connect(); */
+	  var topic = document.getElementById('topicName').value;	  
+	  topics.push(topic);
+	  populateTopics("topicsSelect");
+	  publishTopic("addTopic "+topic);
+	  document.getElementById("publisherName").disabled = true;
+	  document.getElementById('topicName').value = '';
+});
+	  
+$("#publish").click(function(e) {
+		  e.preventDefault();
+		  var t = document.getElementById('topicsSelect');
+		  var selectedTopic = t.options[t.selectedIndex].text;
+		  var msg=document.getElementById('topicData').value;
+	      publishMessage("publish "+selectedTopic+" "+msg);
+});
+
+function publishMessage(message) {
+	if (newPublisherSocket.readyState == WebSocket.OPEN) {
+		newPublisherSocket.send(message);
+        
+    } else {
+        console.error('webSocket is not open. readyState=' + newPublisherSocket.readyState);
+    }
+}
+
+function publishTopic(message) {
+	if (newPublisherSocket.readyState == WebSocket.OPEN) {
+		newPublisherSocket.send(message);
+        
+    } else {
+        console.error('webSocket is not open. readyState=' + newPublisherSocket.readyState);
+    }
+}
+
+function populateTopics(element) {
+	 var select = document.getElementById(element);
+	 removeOptions(select);
+	for(var i = 0, l = topics.length; i < l; i++){
+		var c = document.createElement("option");
+		c.text = topics[i];
+		select.options.add(c, i);
+	}
+}
+
+function removeOptions(selectbox)
+{
+    var i;
+    for(i = selectbox.options.length - 1 ; i >= 0 ; i--)
+    {
+        selectbox.remove(i);
+    }
+}
+
+
+
+</script>
+
+</body>
+</html>

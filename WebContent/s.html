@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		body{
+			background-color: #c19685;
+			text-align: center;
+		}
+	</style>
+<meta charset="UTF-8">
+<title>Subscriber</title>
+<script
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+</head>
+<body>
+	<H2>Subscriber Details</H2>
+	<H3>Subscriber Add</H3>
+	<div id="subscriber_add">
+		<table align="center">
+			<tr>
+				<th>Subscriber Name</th>
+				<th>Topic</th>
+			</tr>
+			<tr>
+				<td>
+					<input id="subscriberName" type="text" name="subscriberName" />
+				</td>
+				<td>
+					<!-- <input id="topicName" type="text" name="topicName" /> -->
+					<select id="topicName"></select>
+				</td>
+			</tr>
+		</table>
+		<br>
+        <input type="submit" name="add" id="add" value="Add" />
+	</div>
+	<br>
+	<hr>
+	<br>
+	<H3>Subscriber Delete</H3>
+	<div id="subscriber_delete">
+		<table align="center">
+			<tr>
+				<th>Subscribers</th>
+				<th>Topic</th>
+			</tr>
+			<tr>
+				<td>
+					<select id="subscribersSelect" name="subscribersSelect"></select> 
+				</td>
+				<td>
+					<select id="subscriberTopicSelect" name="subscriberTopicSelect"></select> 
+				</td>
+			</tr>
+		</table>
+		<br>
+        <input type="submit" name="delete" id="delete" value="Delete" />
+		<br>
+	</div>
+	<br>
+	<hr>
+	<br>
+	<H3>Subscriber Data</H3>
+	<p>
+		<textarea readonly="readonly" id="subscriberMessages" name="subscriberMessages" rows="10" cols="50"></textarea>
+	</p>
+
+	<script type="text/javascript">
+
+	$("#subscribersSelect").change(function(e) {
+    populatePublishersOfSubscriber();
+
+});
+
+/*$("#subscribersSelect").click(function(e) {
+    
+
+    $.ajax({
+    type: "POST",
+    url: './Servlet2',
+    success: function(data)
+    {
+        select = document.getElementById('subscribersSelect');
+        var customResponse = JSON.parse(data);
+        select.innerHTML = "";
+
+		for (var i = 0; i<customResponse.length; i++){
+		    var opt = document.createElement('option');
+		    opt.value = customResponse[i];
+		    opt.innerHTML = customResponse[i];
+		    select.appendChild(opt);
+		}
+    }
+});
+
+});*/
+var url = "ws://127.0.0.1:8090/phase2_2/id2?TYPE=SUBSCRIBER";
+var newPublisherSocket = new WebSocket(url);
+newPublisherSocket.onmessage = onMessage; 
+var subsrciberTopicList = new Map();
+var subscribers = [];
+	
+$("#add").click(function(e) {
+	  e.preventDefault();
+	  var topic = document.getElementById('topicName').value;
+	  var subscriber = document.getElementById('subscriberName').value;
+	  
+	  if(subsrciberTopicList.has(subscriber)) {
+	  	list = subsrciberTopicList.get(subscriber);
+	  	list.push(topic);
+	  	subsrciberTopicList.delete(subscriber);
+	  	subsrciberTopicList.set(subscriber,list);
+
+	  }
+	  else {
+	  subsrciberTopicList.set(subscriber,[topic]);
+	  }
+	  subscribers.push(subscriber);
+	  populateSubscribers();
+	  publishSubscriber("subscribe "+subscriber+" "+topic);
+	  populatePublishersOfSubscriber();
+	  document.getElementById('subscriberName').value = '';
+	  
+});
+
+$("#delete").click(function(e) {
+	  e.preventDefault();
+	  var select = document.getElementById('subscribersSelect').value;
+	  var select2 = document.getElementById('subscriberTopicSelect').value; 
+	  UnSubscribe("unsubscribe "+select+" "+select2);
+	  //var topic = document.getElementById('topicName').value; // not used
+	  
+	  	list = subsrciberTopicList.get(select);
+	  	const index1 = list.indexOf(select2);
+	  	list.splice(index1, 1);
+	  	subsrciberTopicList.set(select,list);
+	  	if(list.length == 0){
+
+	  const index2 = subscribers.indexOf(select);
+	  subscribers.splice(index2, 1);
+	  populateSubscribers();
+	}
+	else {
+		populatePublishersOfSubscriber();
+	}
+	  
+
+});
+
+
+/* function getPubList()
+    
+{
+    $.ajax({
+    type: "POST",
+    url: './Servlet',
+    success: function(data)
+    {
+        select = document.getElementById('topicName');
+        var customResponse = JSON.parse(data);
+        select.innerHTML = "";
+
+		for (var i = 0; i<customResponse.length; i++){
+		    var opt = document.createElement('option');
+		    opt.value = customResponse[i];
+		    opt.innerHTML = customResponse[i];
+		    select.appendChild(opt);
+		}
+    }
+});
+
+} */
+
+
+function removeOptions(selectbox)
+{
+    var i;
+    for(i = selectbox.options.length - 1 ; i >= 0 ; i--)
+    {
+        selectbox.remove(i);
+    }
+}
+
+function populateSubscribers() {
+	var select = document.getElementById('subscribersSelect');
+	removeOptions(select);
+	for(var i = 0, l = subscribers.length; i < l; i++){
+		var c = document.createElement("option");
+		c.text = subscribers[i];
+		select.options.add(c, i);
+	}
+}
+
+function populatePublishersOfSubscriber() {
+	var select = document.getElementById('subscribersSelect').value;
+	var select2 = document.getElementById('subscriberTopicSelect') 
+        select2.innerHTML = "";
+        list = subsrciberTopicList.get(select);
+        if(list != null && list.length >0){
+		for (var i = 0; i<list.length; i++){
+		    var opt = document.createElement('option');
+		    opt.value = list[i];
+		    opt.innerHTML = list[i];
+		    select2.appendChild(opt);
+		}
+	}
+}
+
+function onMessage(evt) {  
+	select = document.getElementById('topicName');          
+	console.log(evt.data);
+	val = evt.data;
+	if(val.includes("Topic")){
+		
+    	index  = val.indexOf(' ');
+    	var res = val.substring(index+1);
+       		
+	    var opt = document.createElement('option');
+	    opt.value = res;
+	    opt.innerHTML = res;
+	    select.appendChild(opt);
+		
+    }
+    else {
+		var myTextArea = $('#subscriberMessages');
+		  myTextArea.val(myTextArea.val() + event.data); 
+    }    
+}
+
+
+
+  function publishSubscriber(message) {
+	if (newPublisherSocket.readyState == WebSocket.OPEN) {
+		newPublisherSocket.send(message);
+        
+    } else {
+        console.error('webSocket is not open. readyState=' + newPublisherSocket.readyState);
+    }
+}
+
+  function UnSubscribe(message) {
+	if (newPublisherSocket.readyState == WebSocket.OPEN) {
+		newPublisherSocket.send(message);
+        
+    } else {
+        console.error('webSocket is not open. readyState=' + newPublisherSocket.readyState);
+    }
+}
+
+  /*  window.addEventListener("load", getPubList, false); */
+
+
+</script>
+
+</body>
+</html>
